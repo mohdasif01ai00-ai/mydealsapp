@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega Local Deals Finder & Chat</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --text-muted: #7f8c8d;
+            --primary: #ff3b30;
+            --secondary: #007aff;
+            --success: #34c759;
+            --border: #e2e8f0;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: background 0.3s, color 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 80px; }
+        
+        /* 🔔 Notification */
+        #notificationBanner { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #1e293b; color: white; padding: 15px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 2000; display: flex; align-items: center; gap: 12px; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #notificationBanner.show { top: 20px; }
+
+        /* Login Screen */
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--card-bg); z-index: 1000; display: flex; flex-direction: column; justify-content: center; padding: 30px; overflow-y: auto; }
+        .login-title { font-size: 2.2rem; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 5px; letter-spacing: -1px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-color); border-radius: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+        
+        .btn-container { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .login-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255,59,48,0.2); }
+        .signup-btn { width: 100%; background: #334155; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+
+        /* Header */
+        .header { background-color: var(--primary); color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 1.3rem; font-weight: 800; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .theme-btn, .logout-btn, .nav-btn { font-size: 1.1rem; background: rgba(255,255,255,0.2); border: none; padding: 8px 14px; border-radius: 20px; color: white; cursor: pointer; font-weight: bold; }
+
+        /* 🎞️ Slider Photo with Text Styling */
+        .slider-container { padding: 16px 16px 0 16px; }
+        .slider { width: 100%; height: 160px; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,0.15); background: #334155; }
+        .slide { width: 100%; height: 100%; position: absolute; opacity: 0; transition: opacity 0.4s ease-in-out; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; background-size: cover; background-position: center; }
+        .slide::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.55); z-index: 1; }
+        .slide.active { opacity: 1; }
+        .slide-text { color: white; font-weight: 800; font-size: 1.4rem; text-shadow: 0 2px 8px rgba(0,0,0,0.5); line-height: 1.4; z-index: 2; position: relative; }
+
+        .search-container { padding: 16px; }
+        .search-bar { width: 100%; padding: 16px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-color); border-radius: 16px; font-size: 1rem; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .search-bar:focus { border-color: var(--primary); }
+
+        /* Categories Bar */
+        .categories { display: flex; justify-content: flex-start; gap: 16px; padding: 16px; background: var(--card-bg); margin-bottom: 16px; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .categories::-webkit-scrollbar { display: none; }
+        .category-item { text-align: center; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 75px; }
+        .category-icon { width: 56px; height: 56px; background: var(--bg-color); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .category-item.active .category-icon { background: var(--primary); color: white; box-shadow: 0 6px 16px rgba(255,59,48,0.3); }
+
+        /* Deals Grid */
+        .section-title { padding: 0 16px; font-size: 1.2rem; margin-bottom: 16px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+        .deals-list { padding: 0 16px; display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .deal-card { background: var(--card-bg); border-radius: 24px; overflow: hidden; position: relative; cursor: pointer; border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.03); transform: translateY(0); transition: transform 0.2s, box-shadow 0.2s; }
+        .deal-card:active { transform: scale(0.98); }
+        .deal-image { width: 100%; height: 190px; object-fit: cover; }
+        .deal-tag { position: absolute; top: 16px; left: 16px; background: var(--primary); color: white; padding: 6px 14px; font-weight: 800; border-radius: 10px; font-size: 0.8rem; z-index: 10; box-shadow: 0 4px 10px rgba(255,59,48,0.3); }
+        
+        /* Favorite & Delete Buttons */
+        .fav-deal-btn { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.9); border: none; padding: 8px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; z-index: 20; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .fav-deal-btn.active { color: var(--primary); }
+        .delete-deal-btn { position: absolute; top: 16px; right: 64px; background: rgba(0,0,0,0.7); color: #ff3b30; border: none; padding: 8px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; z-index: 20; width: 38px; height: 38px; display: none; align-items: center; justify-content: center; }
+        
+        .deal-details { padding: 18px; }
+        .shop-name { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+        .deal-text { color: var(--primary); font-weight: 800; font-size: 1.3rem; margin-bottom: 10px; }
+        .deal-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; font-weight: 600; }
+
+        /* Floating Navigation Bar */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 900; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item span { font-size: 1.5rem; margin-bottom: 2px; }
+
+        .fab-btn { width: 55px; height: 55px; background: var(--primary); color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; box-shadow: 0 6px 20px rgba(255,59,48,0.4); cursor: pointer; border: none; transform: translateY(-15px); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1100; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card-bg); color: var(--text-color); width: 92%; max-width: 440px; padding: 24px; border-radius: 28px; position: relative; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .close-btn { position: absolute; top: 16px; right: 20px; font-size: 1.8rem; cursor: pointer; font-weight: 700; color: var(--text-muted); }
+
+        .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .btn-call { background: #e1ffeb; color: var(--success); text-align: center; padding: 14px; border-radius: 14px; text-decoration: none; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-whatsapp { background: #25D366; color: white; text-align: center; padding: 14px; border-radius: 14px; text-decoration: none; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-chat { grid-column: span 2; background: var(--secondary); color: white; text-align: center; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; }
+        .btn-coupon { grid-column: span 2; background: #ff9500; color: white; text-align: center; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; }
+
+        /* Chat Window styling */
+        #chatModal .modal-content { height: 70vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+        .chat-header { background: var(--secondary); color: white; padding: 16px; font-weight: bold; border-top-left-radius: 28px; border-top-right-radius: 28px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: var(--bg-color); }
+        .msg { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
+        .msg.sent { background: var(--secondary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg.received { background: var(--card-bg); color: var(--text-color); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .chat-input-area { padding: 12px; background: var(--card-bg); display: flex; gap: 10px; border-top: 1px solid var(--border); }
+        .chat-input-area input { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: var(--bg-color); color: var(--text-color); }
+        .chat-send-btn { background: var(--secondary); color: white; border: none; padding: 0 16px; border-radius: 12px; font-weight: bold; }
+
+        /* QR Code Modal Display */
+        .coupon-box { text-align: center; padding: 20px; border: 2px dashed #ff9500; border-radius: 16px; background: #fff9e6; color: #333; margin-top: 15px; }
+        .qr-placeholder { font-weight: bold; font-size: 1.2rem; background: white; padding: 15px; display: inline-block; margin: 15px 0; border: 1px solid #ddd; }
+
+        /* Hide-Show Screens */
+        .app-page { display: none; }
+        .app-page.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- 🔔 Push Notification -->
+    <div id="notificationBanner">
+        <span style="font-size: 1.5rem;">🔥</span>
+        <div>
+            <strong id="notifTitle">New Live Deal!</strong>
+            <p id="notifDesc" style="font-size: 0.85rem; opacity: 0.9;"></p>
+        </div>
+    </div>
+
+    <!-- 🔒 Auth Screen -->
+    <div id="loginScreen">
+        <h2 class="login-title">Local Deals Finder</h2>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 25px;">Premium Market Ecosystem</p>
+        
+        <div class="form-group">
+            <label>Choose Account Type</label>
+            <select id="authRole">
+                <option value="customer">Customer (Buy Deals)</option>
+                <option value="merchant">Merchant / Shopkeeper (Post Deals)</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Email Address</label><input type="email" id="authEmail" placeholder="name@example.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="authPassword" placeholder="Min 6 characters"></div>
+        
+        <div class="btn-container">
+            <button class="login-btn" id="loginBtnOnly">Sign In / Login</button>
+            <button class="signup-btn" id="signupBtnOnly">Register New Account</button>
+        </div>
+    </div>
+
+    <!-- Main Content Header -->
+    <div id="appHeader" style="display:none;">
+        <div class="header">
+            <h1 id="appLogoTitle">Local Deals Finder</h1>
+            <div class="header-right">
+                <button class="theme-btn" id="themeToggleBtn">🌙</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📱 PAGES -->
+    <!-- 1. HOME PAGE -->
+    <div id="homePage" class="app-page app-page.active" style="display:none;">
+        <div class="slider-container">
+            <!-- 🎞️ 1-SECOND DYNAMIC 12 CATEGORIES WITH REAL IMAGES -->
+            <div class="slider" id="bannerSlider">
+                <!-- 1. Groceries -->
+                <div class="slide active" style="background-image: url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">🛒 Groceries Deals Near You! <br><span style="font-size:0.95rem; font-weight:400;">Fresh Stocks Daily</span></div>
+                </div>
+                <!-- 2. Electronics -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">⚡ Electronics Offers! <br><span style="font-size:0.95rem; font-weight:400;">Smartphones & Accessories</span></div>
+                </div>
+                <!-- 3. Automobile -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">🚗 Automobile Care! <br><span style="font-size:0.95rem; font-weight:400;">Best Repairing Discounts</span></div>
+                </div>
+                <!-- 4. Medical -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">💊 Medical & Pharmacy! <br><span style="font-size:0.95rem; font-weight:400;">Get Up to 20% Off on Meds</span></div>
+                </div>
+                <!-- 5. Books -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">📚 Books & Stationery! <br><span style="font-size:0.95rem; font-weight:400;">Exam Guides & Novels Available</span></div>
+                </div>
+                <!-- 6. Footwear -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">👟 Footwear Zone! <br><span style="font-size:0.95rem; font-weight:400;">Branded Shoes Sale Live</span></div>
+                </div>
+                <!-- 7. Gym & Fitness -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">💪 Gym & Fitness Hub! <br><span style="font-size:0.95rem; font-weight:400;">Flat Enrollment Discounts</span></div>
+                </div>
+                <!-- 8. Toys & Kids -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1537655780520-1e392edd816a?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">🧸 Toys & Kids Planet! <br><span style="font-size:0.95rem; font-weight:400;">Fun Games & Soft Toys</span></div>
+                </div>
+                <!-- 9. Food -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">🍔 Yummy Food Court! <br><span style="font-size:0.95rem; font-weight:400;">Pizza, Burgers & Local Cuisines</span></div>
+                </div>
+                <!-- 10. Fashion -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">👗 Fashion & Apparels! <br><span style="font-size:0.95rem; font-weight:400;">Latest Trends & Clothing Styles</span></div>
+                </div>
+                <!-- 11. Salon & Spa -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">💇 Premium Salon & Spa! <br><span style="font-size:0.95rem; font-weight:400;">Haircuts & Style Packages</span></div>
+                </div>
+                <!-- 12. Services -->
+                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop');">
+                    <div class="slide-text">🛠️ Local Services On-Demand! <br><span style="font-size:0.95rem; font-weight:400;">Plumbers, Electricians & Cleaners</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="search-container"><input type="text" class="search-bar" id="searchBar" placeholder="दुकानें या ऑफर्स सर्च करें..."></div>
+        
+        <!-- 🛒 12 MAIN CATEGORIES BAR -->
+        <div class="categories">
+            <div class="category-item active" data-cat="all"><div class="category-icon">📱</div>All</div>
+            <div class="category-item" data-cat="groceries"><div class="category-icon">🛒</div>Groceries</div>
+            <div class="category-item" data-cat="electronics"><div class="category-icon">⚡</div>Electronics</div>
+            <div class="category-item" data-cat="automobile"><div class="category-icon">🚗</div>Automobile</div>
+            <div class="category-item" data-cat="medical"><div class="category-icon">💊</div>Medical</div>
+            <div class="category-item" data-cat="books"><div class="category-icon">📚</div>Books</div>
+            <div class="category-item" data-cat="footwear"><div class="category-icon">👟</div>Footwear</div>
+            <div class="category-item" data-cat="gym"><div class="category-icon">💪</div>Gym</div>
+            <div class="category-item" data-cat="toys"><div class="category-icon">🧸</div>Toys</div>
+            <div class="category-item" data-cat="food"><div class="category-icon">🍔</div>Food</div>
+            <div class="category-item" data-cat="fashion"><div class="category-icon">👗</div>Fashion</div>
+            <div class="category-item" data-cat="salon"><div class="category-icon">💇</div>Salon</div>
+            <div class="category-item" data-cat="services"><div class="category-icon">🛠️</div>Services</div>
+        </div>
+        
+        <h2 class="section-title" id="listTitle">आपके लाइव ऑफर्स 🏢</h2>
+        <div class="deals-list" id="dealsContainer"></div>
+    </div>
+
+    <!-- 2. FAVORITES PAGE -->
+    <div id="favPage" class="app-page" style="display:none; padding-top:15px;">
+        <h2 class="section-title">Your Bookmarked Deals ❤️</h2>
+        <div class="deals-list" id="favDealsContainer"></div>
+    </div>
+
+    <!-- 3. CHATS LIST PAGE -->
+    <div id="chatsListPage" class="app-page" style="display:none; padding:16px;">
+        <h2 class="section-title">Active Conversations 💬</h2>
+        <div id="chatsListContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+    </div>
+
+    <!-- 🛍️ Details Modal -->
+    <div id="dealModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeDealBtn">&times;</span>
+            <h2 id="modalShopName">Shop Name</h2>
+            <p id="modalDealText" style="color: var(--primary); font-weight: 800; font-size: 1.4rem; margin: 10px 0;">Offer Details</p>
+            <p class="expiry-badge" id="modalExpiryText" style="font-weight:600; color:var(--text-muted);">⏳ Valid Until: </p>
+
+            <div class="action-buttons">
+                <a id="modalCallLink" href="#" class="btn-call">📞 Call Shop</a>
+                <a id="modalWALink" href="#" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                <button id="modalChatBtn" class="btn-chat">💬 Chat Live on App</button>
+                <button id="modalClaimCouponBtn" class="btn-coupon">🎟️ Claim Deal Coupon QR</button>
+            </div>
+            
+            <div id="couponDisplaySection" style="display:none;">
+                <div class="coupon-box">
+                    <h3>🎟️ COUPON ACTIVATED!</h3>
+                    <p style="font-size:0.85rem; margin-top:5px;">Show this QR Code to the shop owner to claim your discount.</p>
+                    <div class="qr-placeholder" id="qrCodeTarget">GENERATING QR...</div>
+                    <div style="font-weight:bold; letter-spacing:1px;" id="couponCodeRaw">LDF-XXXX</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💬 LIVE CHAT MODAL WINDOW -->
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <div class="chat-header">
+                <span id="chatWithTitle">Chatting...</span>
+                <span class="close-btn" id="closeChatBtn" style="position:static; color:white; font-size:1.5rem;">&times;</span>
+            </div>
+            <div class="chat-messages" id="chatMessagesContainer"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInputRaw" placeholder="Type a secure message...">
+                <button class="chat-send-btn" id="chatSendBtnRaw">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📤 Merchant Upload Form Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeUploadBtn">&times;</span>
+            <h3 style="margin-bottom: 15px; color: var(--primary);">Broadcast New Offer 🚀</h3>
+            <div class="form-group"><label>Shop Name</label><input type="text" id="shopNameInput" placeholder="Gupta Mega Store"></div>
+            <div class="form-group"><label>Offer / Deal description</label><input type="text" id="dealTextInput" placeholder="Buy 1 Get 1 Free on all items!"></div>
+            <div class="form-group"><label>Display Tag</label><input type="text" id="tagInput" placeholder="50% OFF / FLAT DISCOUNT"></div>
+            <div class="form-group"><label>Contact Mobile No</label><input type="tel" id="phoneInput" placeholder="98765xxxxx"></div>
+            <div class="form-group"><label>Offer Expiry Date</label><input type="date" id="expiryInput"></div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="categorySelect">
+                    <option value="groceries">Groceries 🛒</option>
+                    <option value="electronics">Electronics ⚡</option>
+                    <option value="automobile">Automobile 🚗</option>
+                    <option value="medical">Medical 💊</option>
+                    <option value="books">Books 📚</option>
+                    <option value="footwear">Footwear 👟</option>
+                    <option value="gym">Gym 💪</option>
+                    <option value="toys">Toys 🧸</option>
+                    <option value="food">Food 🍔</option>
+                    <option value="fashion">Fashion 👗</option>
+                    <option value="salon">Salon 💇</option>
+                    <option value="services">Services 🛠️</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Upload Real Product Photo 📸</label>
+                <input type="file" id="filePhotoInput" accept="image/*" style="border:none; padding:5px;">
+                <input type="hidden" id="hiddenImgData" value="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500">
+            </div>
+            <button class="login-btn" id="submitDealBtn">Go Live Instantly 🚀</button>
+        </div>
+    </div>
+
+    <!-- 📱 Navigation Dock Bar -->
+    <div class="bottom-nav" id="appBottomNav" style="display:none;">
+        <div class="nav-item active" id="navHome"><span>🏠</span>Home</div>
+        <div class="nav-item" id="navFav"><span>❤️</span>Saved</div>
+        <button class="fab-btn" id="openUploadBtn">+</button>
+        <div class="nav-item" id="navChats"><span>💬</span>Chats</div>
+        <div class="nav-item" id="navLogout"><span>🚪</span>Logout</div>
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZW-I8bdyUcHarlVzKClWXDPCJcHcHKec",
+            authDomain: "local-deals-finder-6c54b.firebaseapp.com",
+            projectId: "local-deals-finder-6c54b",
+            storageBucket: "local-deals-finder-6c54b.firebasestorage.app",
+            messagingSenderId: "545934889014",
+            appId: "1:545934889014:web:589c05e33e61a45a420897"
+        };
+
+        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app);
+        let userLat = null, userLon = null, currentActiveDealId = null, userRole = 'customer', isFirstLoad = true;
+        let allDealsData = [], currentCategory = 'all', savedDealsIds = [], activeChatId = null, currentChatOpponentId = '';
+
+        // File/Camera photo converter
+        document.getElementById('filePhotoInput').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function() { document.getElementById('hiddenImgData').value = reader.result; };
+            if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+        });
+
+        // Theme Toggle
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            document.getElementById('themeToggleBtn').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        });
+
+        // 🎞️ FAST & SMOOTH 1-SECOND MOTION DYNAMIC SLIDER WITH PHOTOS
+        let currentSlide = 0; const slides = document.querySelectorAll('.slide');
+        setInterval(() => { 
+            if(slides.length) { 
+                slides[currentSlide].classList.remove('active'); 
+                currentSlide = (currentSlide + 1) % slides.length; 
+                slides[currentSlide].classList.add('active'); 
+            } 
+        }, 1000); // 1 Second exact interval
+
+        // Location Finder
+        if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(pos => { userLat = pos.coords.latitude; userLon = pos.coords.longitude; renderDeals(); }); }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            if(!lat1 || !lon1 || !lat2 || !lon2 || (lat2==0 && lon2==0)) return "N/A";
+            const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return (R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)))).toFixed(1) + " km";
+        }
+
+        // Authentication Controls
+        const loginScreen = document.getElementById('loginScreen');
+        document.getElementById('loginBtnOnly').addEventListener('click', () => {
+            const email = document.getElementById('authEmail').value; const pass = document.getElementById('authPassword').value;
+            userRole = document.getElementById('authRole').value; localStorage.setItem('userRole', userRole);
+            if(!email || !pass) return alert("Fill credentials!");
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+        });
+
+        document.getElementById('signupBtnOnly').addEventListener('click', () => {
+            const email = document.getElementById('authEmail').value; const pass = document.getElementById('authPassword').value;
+            userRole = document.getElementById('authRole').value; localStorage.setItem('userRole', userRole);
+            if(!email || !pass) return alert("Fill credentials!");
+            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+        });
+
+        document.getElementById('navLogout').addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, user => {
+            loginScreen.style.display = user ? "none" : "flex";
+            document.getElementById('appHeader').style.display = user ? "block" : "none";
+            document.getElementById('appBottomNav').style.display = user ? "flex" : "none";
+            if (user) {
+                userRole = localStorage.getItem('userRole') || 'customer';
+                document.getElementById('openUploadBtn').style.display = (userRole === 'merchant') ? "flex" : "none";
+                switchPage('home');
+                loadRealtimeDeals();
+                loadChatsList();
+            } else {
+                document.getElementById('homePage').style.display = "none";
+                document.getElementById('favPage').style.display = "none";
+                document.getElementById('chatsListPage').style.display = "none";
+            }
+        });
+
+        // Navigation Machine
+        function switchPage(pageId) {
+            document.querySelectorAll('.app-page').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(pageId === 'home') { document.getElementById('homePage').style.display = 'block'; document.getElementById('navHome').classList.add('active'); }
+            if(pageId === 'fav') { document.getElementById('favPage').style.display = 'block'; document.getElementById('navFav').classList.add('active'); renderFavorites(); }
+            if(pageId === 'chats') { document.getElementById('chatsListPage').style.display = 'block'; document.getElementById('navChats').classList.add('active'); }
+        }
+        document.getElementById('navHome').addEventListener('click', () => switchPage('home'));
+        document.getElementById('navFav').addEventListener('click', () => switchPage('fav'));
+        document.getElementById('navChats').addEventListener('click', () => switchPage('chats'));
+
+        // Load Realtime Data
+        function loadRealtimeDeals() {
+            const qD = query(collection(db, "deals"), orderBy("time", "desc"));
+            onSnapshot(qD, (snapshot) => {
+                let newDeals = [];
+                snapshot.forEach(doc => { let data = doc.data(); data.id = doc.id; newDeals.push(data); });
+                if (!isFirstLoad && newDeals.length > allDealsData.length) {
+                    showNotification(newDeals[0].shopName, newDeals[0].dealText);
+                }
+                isFirstLoad = false; allDealsData = newDeals; renderDeals();
+            });
+        }
+
+        function showNotification(shop, deal) {
+            document.getElementById('notifDesc').textContent = `${shop}: ${deal}`;
+            const banner = document.getElementById('notificationBanner'); banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 4500);
+        }
+
+        function renderDeals() {
+            const container = document.getElementById('dealsContainer'); container.innerHTML = "";
+            buildCardsStructure(allDealsData, container);
+        }
+        function renderFavorites() {
+            const container = document.getElementById('favDealsContainer'); container.innerHTML = "";
+            const filtered = allDealsData.filter(d => savedDealsIds.includes(d.id));
+            if(!filtered.length) container.innerHTML = "<p style='padding:20px; color:var(--text-muted); text-align:center;'>No saved offers yet.</p>";
+            buildCardsStructure(filtered, container);
+        }
+
+        function buildCardsStructure(dataset, htmlTargetContainer) {
+            const searchVal = document.getElementById('searchBar').value.toLowerCase();
+            dataset.forEach(deal => {
+                if (currentCategory !== 'all' && deal.category !== currentCategory) return;
+                if (!deal.shopName.toLowerCase().includes(searchVal) && !deal.dealText.toLowerCase().includes(searchVal)) return;
+
+                const distanceStr = calculateDistance(userLat, userLon, deal.lat, deal.lon);
+                const isFav = savedDealsIds.includes(deal.id) ? 'active' : '';
+                const heartIcon = savedDealsIds.includes(deal.id) ? '❤️' : '🤍';
+
+                const card = document.createElement('div'); card.className = "deal-card";
+                card.innerHTML = `
+                    <div class="deal-tag">${deal.tag}</div>
+                    <button class="fav-deal-btn ${isFav}">${heartIcon}</button>
+                    <button class="delete-deal-btn">🗑️</button>
+                    <img class="deal-image" src="${deal.imgUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500'}">
+                    <div class="deal-details">
+                        <div class="shop-name">${deal.shopName}</div>
+                        <div class="deal-text">${deal.dealText}</div>
+                        <div class="deal-meta"><span>📍 ${distanceStr} away</span><span>⏳ ${deal.expiryDate || 'Limited'}</span></div>
+                    </div>
+                `;
+                if(userRole === 'merchant' && auth.currentUser && deal.ownerId === auth.currentUser.uid) { card.querySelector('.delete-deal-btn').style.display = "flex"; }
+                
+                card.querySelector('.fav-deal-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if(savedDealsIds.includes(deal.id)) { savedDealsIds = savedDealsIds.filter(id => id !== deal.id); }
+                    else { savedDealsIds.push(deal.id); }
+                    e.target.textContent = savedDealsIds.includes(deal.id) ? '❤️' : '🤍';
+                    if(document.getElementById('favPage').style.display === 'block') renderFavorites();
+                });
+
+                card.querySelector('.delete-deal-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if(confirm("Delete this broadcasted offer?")) { await deleteDoc(doc(db, "deals", deal.id)); }
+                });
+
+                card.addEventListener('click', () => openDealModal(deal));
+                htmlTargetContainer.appendChild(card);
+            });
+        }
+
+        function openDealModal(deal) {
+            currentActiveDealId = deal.id;
+            currentChatOpponentId = deal.ownerId || 'merchant_placeholder';
+            document.getElementById('modalShopName').textContent = deal.shopName;
+            document.getElementById('modalDealText').textContent = deal.dealText;
+            document.getElementById('modalExpiryText').textContent = `⏳ Valid Until: ${deal.expiryDate || 'N/A'}`;
+            document.getElementById('modalCallLink').href = `tel:${deal.phone}`;
+            document.getElementById('modalWALink').href = `https://wa.me/91${deal.phone}`;
+            document.getElementById('couponDisplaySection').style.display = "none";
+            document.getElementById('dealModal').style.display = "flex";
+        }
+
+        // Coupon Claim Logic
+        document.getElementById('modalClaimCouponBtn').addEventListener('click', () => {
+            const cCode = "LDF-" + Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('couponCodeRaw').textContent = cCode;
+            document.getElementById('qrCodeTarget').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${cCode}" style="display:block; margin:auto;">`;
+            document.getElementById('couponDisplaySection').style.display = "block";
+            alert("Coupon Generated successfully!");
+        });
+
+        // Live Chat Setup
+        document.getElementById('modalChatBtn').addEventListener('click', () => {
+            if(!auth.currentUser) return alert("Please login first");
+            document.getElementById('dealModal').style.display = "none";
+            activeChatId = auth.currentUser.uid < currentChatOpponentId ? `${auth.currentUser.uid}_${currentChatOpponentId}` : `${currentChatOpponentId}_${auth.currentUser.uid}`;
+            document.getElementById('chatWithTitle').textContent = document.getElementById('modalShopName').textContent;
+            openChatWindowContainer();
+        });
+
+        function openChatWindowContainer() {
+            document.getElementById('chatModal').style.display = "flex";
+            const qChat = query(collection(db, "chats"), where("roomId", "==", activeChatId), orderBy("time", "asc"));
+            onSnapshot(qChat, (snap) => {
+                const box = document.getElementById('chatMessagesContainer'); box.innerHTML = "";
+                snap.forEach(mDoc => {
+                    const m = mDoc.data();
+                    const cls = m.senderId === auth.currentUser.uid ? 'sent' : 'received';
+                    box.innerHTML += `<div class="msg ${cls}">${m.text}</div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+        }
+
+        document.getElementById('chatSendBtnRaw').addEventListener('click', async () => {
+            const rawTxt = document.getElementById('chatInputRaw').value.trim();
+            if(!rawTxt) return;
+            await addDoc(collection(db, "chats"), { roomId: activeChatId, senderId: auth.currentUser.uid, receiverId: currentChatOpponentId, text: rawTxt, time: Date.now() });
+            document.getElementById('chatInputRaw').value = "";
+        });
+
+        function loadChatsList() {
+            if(!auth.currentUser) return;
+            const qList = query(collection(db, "chats"), orderBy("time", "desc"));
+            onSnapshot(qList, (snap) => {
+                const container = document.getElementById('chatsListContainer'); container.innerHTML = "";
+                let uniqueRooms = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    if((data.senderId === auth.currentUser.uid || data.receiverId === auth.currentUser.uid) && !uniqueRooms.includes(data.roomId)) {
+                        uniqueRooms.push(data.roomId);
+                        const item = document.createElement('div');
+                        item.style = "background:var(--card-bg); padding:16px; border-radius:14px; border:1px solid var(--border); font-weight:bold; cursor:pointer;";
+                        item.textContent = `💬 Open Secured Chat Room (${data.roomId.substring(0,8)}...)`;
+                        item.addEventListener('click', () => {
+                            activeChatId = data.roomId;
+                            currentChatOpponentId = data.senderId === auth.currentUser.uid ? data.receiverId : data.senderId;
+                            document.getElementById('chatWithTitle').textContent = "Active Chat Box";
+                            openChatWindowContainer();
+                        });
+                        container.appendChild(item);
+                    }
+                });
+                if(!uniqueRooms.length) container.innerHTML = "<p style='color:var(--text-muted); text-align:center;'>No active messaging threads yet.</p>";
+            });
+        }
+
+        // Deal upload triggers
+        document.getElementById('submitDealBtn').addEventListener('click', async () => {
+            const shopName = document.getElementById('shopNameInput').value; const dealText = document.getElementById('dealTextInput').value;
+            const tag = document.getElementById('tagInput').value; const phone = document.getElementById('phoneInput').value;
+            const expiryDate = document.getElementById('expiryInput').value; const category = document.getElementById('categorySelect').value;
+            const imgUrl = document.getElementById('hiddenImgData').value;
+            if(!shopName || !dealText || !tag || !phone || !expiryDate) return alert("All fields are mandatory!");
+
+            const finalizeUpload = async (lt, ln) => {
+                await addDoc(collection(db, "deals"), { shopName, dealText, tag, phone, expiryDate, category, imgUrl, lat: lt, lon: ln, ownerId: auth.currentUser.uid, time: Date.now() });
+                document.getElementById('uploadModal').style.display = "none";
+                alert("Offer is now live across the hyper-market platform!");
+            };
+            if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(p => finalizeUpload(p.coords.latitude, p.coords.longitude), () => finalizeUpload(0,0)); }
+            else { finalizeUpload(0,0); }
+        });
+
+        // UI triggers
+        document.getElementById('openUploadBtn').addEventListener('click', () => document.getElementById('uploadModal').style.display = "flex");
+        document.getElementById('closeUploadBtn').addEventListener('click', () => document.getElementById('uploadModal').style.display = "none");
+        document.getElementById('closeDealBtn').addEventListener('click', () => document.getElementById('dealModal').style.display = "none");
+        document.getElementById('closeChatBtn').addEventListener('click', () => document.getElementById('chatModal').style.display = "none");
+        document.getElementById('searchBar').addEventListener('input', renderDeals);
+
+        const categoriesListItems = document.querySelectorAll('.category-item');
+        categoriesListItems.forEach(i => { i.addEventListener('click', function() { categoriesListItems.forEach(c => c.classList.remove('active')); this.classList.add('active'); currentCategory = this.getAttribute('data-cat'); renderDeals(); }); });
+    </script>
+</body>
+</html>
