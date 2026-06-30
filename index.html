@@ -1,432 +1,298 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local Deals Finder - Mega Market Edition</title>
+    <title>My Deals App</title>
     <style>
-        :root {
-            --bg-color: #f7f7f7;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --text-muted: #666666;
-            --primary: #ff3b30;
-            --border: #dddddd;
+        /* पूरे पेज की सेटिंग */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding-bottom: 30px;
         }
 
-        [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #f5f5f5;
-            --text-muted: #b0b0b0;
-            --border: #333333;
+        /* ऐप का ऊपरी हिस्सा (Header) */
+        .app-header {
+            background-color: #1e293b;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; transition: background 0.3s, color 0.3s; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 80px; }
-        
-        /* 🔔 नोटिफिकेशन बैनर */
-        #notificationBanner { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #333; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2000; display: flex; align-items: center; gap: 10px; transition: top 0.5s ease-in-out; }
-        #notificationBanner.show { top: 20px; }
+        /* बैनर स्लाइडर स्टाइल */
+        .app-slider-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 10px auto;
+            overflow: hidden;
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .app-slider {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+            width: 300%; 
+        }
+        .app-slide {
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .app-slide img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            display: block;
+        }
 
-        /* लॉगिन स्क्रीन */
-        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--card-bg); z-index: 1000; display: flex; flex-direction: column; justify-content: center; padding: 30px; }
-        .login-title { font-size: 1.8rem; font-weight: bold; color: var(--primary); text-align: center; margin-bottom: 5px; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); border-radius: 10px; font-size: 0.95rem; outline: none; }
-        .login-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        /* हेडिंग स्टाइल */
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 15px 10px 15px;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-        /* मुख्य हेडर */
-        .header { background-color: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .header h1 { font-size: 1.2rem; }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-        .theme-btn, .logout-btn { font-size: 1rem; background: rgba(255,255,255,0.2); border: none; padding: 6px 12px; border-radius: 20px; color: white; cursor: pointer; font-weight: bold; }
+        /* 12 कैटेगरी का ग्रिड */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px 10px;
+            padding: 0 15px;
+            margin-bottom: 20px;
+        }
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            text-decoration: none;
+            color: #475569;
+        }
+        .category-img {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            margin-bottom: 6px;
+        }
+        .category-name {
+            font-size: 11px;
+            font-weight: 600;
+        }
 
-        /* बैनर स्लाइडर */
-        .slider-container { padding: 15px 15px 0 15px; }
-        .slider { width: 100%; height: 130px; border-radius: 15px; overflow: hidden; position: relative; }
-        .slide { width: 100%; height: 100%; position: absolute; opacity: 0; transition: opacity 0.8s; background-size: cover; background-position: center; display: flex; align-items: flex-end; }
-        .slide.active { opacity: 1; }
-        .slide-text { background: linear-gradient(transparent, rgba(0,0,0,0.8)); width: 100%; padding: 15px; color: white; font-weight: bold; }
+        /* प्रोडक्ट्स/डील्स सेक्शन */
+        .deals-container {
+            padding: 0 15px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .product-img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+        }
+        .product-info {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .product-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+            height: 36px;
+            overflow: hidden;
+        }
+        .product-price {
+            margin-bottom: 10px;
+        }
+        .current-price {
+            font-size: 15px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        .old-price {
+            font-size: 11px;
+            text-decoration: line-through;
+            color: #94a3b8;
+            margin-left: 5px;
+        }
 
-        .search-container { padding: 15px; }
-        .search-bar { width: 100%; padding: 14px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); border-radius: 12px; font-size: 1rem; outline: none; }
-
-        /* 📱 स्क्रॉलेबल कैटेगरीज (टोटल 12 कैटेगरीज़) */
-        .categories { display: flex; justify-content: flex-start; gap: 20px; padding: 15px 15px; background: var(--card-bg); margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-        .categories::-webkit-scrollbar { display: none; }
-        .category-item { text-align: center; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 65px; }
-        .category-icon { width: 52px; height: 52px; background: var(--bg-color); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 5px; }
-        .category-item.active .category-icon { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(255,59,48,0.3); }
-
-        /* डील्स कार्ड्स */
-        .section-title { padding: 0 15px; font-size: 1.1rem; margin-bottom: 12px; font-weight: bold; }
-        .deals-list { padding: 0 15px; }
-        .deal-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; margin-bottom: 18px; position: relative; cursor: pointer; border: 1px solid var(--border); }
-        .deal-image { width: 100%; height: 170px; object-fit: cover; }
-        .deal-tag { position: absolute; top: 12px; left: 12px; background: var(--primary); color: white; padding: 6px 12px; font-weight: bold; border-radius: 8px; font-size: 0.8rem; z-index: 10; }
-        .delete-deal-btn { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.7); color: #ff3b30; border: none; padding: 8px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; z-index: 20; width: 36px; height: 36px; display: none; align-items: center; justify-content: center; }
-        .deal-details { padding: 15px; }
-        .shop-name { font-size: 1.1rem; font-weight: bold; margin-bottom: 4px; }
-        .deal-text { color: var(--primary); font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; }
-        .deal-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; }
-
-        /* प्लस बटन */
-        .fab-btn { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; box-shadow: 0 6px 15px rgba(255,59,48,0.4); cursor: pointer; z-index: 500; border: none; }
-
-        /* पॉप-अप */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 600; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card-bg); color: var(--text-color); width: 92%; max-width: 420px; padding: 22px; border-radius: 20px; position: relative; max-height: 85vh; overflow-y: auto; }
-        .close-btn { position: absolute; top: 12px; right: 18px; font-size: 1.6rem; cursor: pointer; font-weight: bold; color: var(--text-muted); }
-
-        .stars-container { color: #ffd700; font-size: 1.2rem; margin: 4px 0; }
-        .give-rating { display: flex; gap: 6px; font-size: 2rem; color: #ccc; cursor: pointer; margin-bottom: 12px; }
-        .give-rating .star.active { color: #ffd700; }
-        .reviews-list { max-height: 120px; overflow-y: auto; background: var(--bg-color); padding: 10px; border-radius: 10px; margin-top: 10px; }
-        .review-item { border-bottom: 1px solid var(--border); padding: 6px 0; font-size: 0.85rem; }
-        
-        .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
-        .btn-call { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold; }
-        .btn-whatsapp { background: #25D366; color: white; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .btn-map { grid-column: span 2; background: #4285F4; color: white; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        /* व्हाट्सएप बटन स्टाइल */
+        .whatsapp-btn {
+            background-color: #25D366;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 8px;
+            border-radius: 6px;
+            display: block;
+            margin-top: auto;
+            box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2);
+        }
     </style>
 </head>
 <body>
 
-    <!-- 🔔 पुश नोटिफिकेशन -->
-    <div id="notificationBanner">
-        <span style="font-size: 1.5rem;">🔔</span>
-        <div>
-            <strong id="notifTitle">नया ऑफर लाइव!</strong>
-            <p id="notifDesc" style="font-size: 0.85rem; opacity: 0.9;"></p>
+    <!-- ऐप का नाम -->
+    <div class="app-header">
+        My Deals App
+    </div>
+
+    <!-- 1. ऑटोमेटिक बैनर स्लाइडर -->
+    <div class="app-slider-container">
+        <div class="app-slider" id="mainSlider">
+            <div class="app-slide"><img src="https://picsum.photos/600/200?random=1" alt="Mega Offer"></div>
+            <div class="app-slide"><img src="https://picsum.photos/600/200?random=2" alt="Fashion Sale"></div>
+            <div class="app-slide"><img src="https://picsum.photos/600/200?random=3" alt="Electronics Deal"></div>
         </div>
     </div>
 
-    <!-- 🔒 लॉगिन स्क्रीन -->
-    <div id="loginScreen">
-        <h2 class="login-title" id="authTitle">लॉगिन करें</h2>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 25px;">Local Deals Finder - Ultimate Market</p>
+    <!-- 2. टॉप 12 कैटेगरीज -->
+    <div class="section-title">Top Categories</div>
+    <div class="categories-grid">
+        <!-- 1 -->
+        <a class="category-item" href="#mobiles">
+            <img class="category-img" src="https://picsum.photos/100/100?random=11" alt="Mobiles">
+            <span class="category-name">Mobiles</span>
+        </a>
+        <!-- 2 -->
+        <a class="category-item" href="#clothes">
+            <img class="category-img" src="https://picsum.photos/100/100?random=12" alt="Fashion">
+            <span class="category-name">Fashion</span>
+        </a>
+        <!-- 3 -->
+        <a class="category-item" href="#electronics">
+            <img class="category-img" src="https://picsum.photos/100/100?random=13" alt="Electronics">
+            <span class="category-name">Electronics</span>
+        </a>
+        <!-- 4 -->
+        <a class="category-item" href="#home">
+            <img class="category-img" src="https://picsum.photos/100/100?random=14" alt="Home">
+            <span class="category-name">Home</span>
+        </a>
+        <!-- 5 -->
+        <a class="category-item" href="#appliances">
+            <img class="category-img" src="https://picsum.photos/100/100?random=15" alt="Appliances">
+            <span class="category-name">Appliances</span>
+        </a>
+        <!-- 6 -->
+        <a class="category-item" href="#beauty">
+            <img class="category-img" src="https://picsum.photos/100/100?random=16" alt="Beauty">
+            <span class="category-name">Beauty</span>
+        </a>
+        <!-- 7 -->
+        <a class="category-item" href="#toys">
+            <img class="category-img" src="https://picsum.photos/100/100?random=17" alt="Toys">
+            <span class="category-name">Toys & Sports</span>
+        </a>
+        <!-- 8 -->
+        <a class="category-item" href="#grocery">
+            <img class="category-img" src="https://picsum.photos/100/100?random=18" alt="Grocery">
+            <span class="category-name">Grocery</span>
+        </a>
+        <!-- 9 -->
+        <a class="category-item" href="#footwear">
+            <img class="category-img" src="https://picsum.photos/100/100?random=19" alt="Footwear">
+            <span class="category-name">Footwear</span>
+        </a>
+        <!-- 10 -->
+        <a class="category-item" href="#watches">
+            <img class="category-img" src="https://picsum.photos/100/100?random=20" alt="Watches">
+            <span class="category-name">Watches</span>
+        </a>
+        <!-- 11 -->
+        <a class="category-item" href="#accessories">
+            <img class="category-img" src="https://picsum.photos/100/100?random=21" alt="Accessories">
+            <span class="category-name">Accessories</span>
+        </a>
+        <!-- 12 -->
+        <a class="category-item" href="#offers">
+            <img class="category-img" src="https://picsum.photos/100/100?random=22" alt="Offers">
+            <span class="category-name">Top Offers</span>
+        </a>
+    </div>
+
+    <!-- 3. बेस्ट डील्स सेक्शन -->
+    <div class="section-title">🔥 Today's Best Deals</div>
+    <div class="deals-container">
         
-        <div class="form-group">
-            <label>आप कौन हैं? (Role)</label>
-            <select id="authRole">
-                <option value="customer">ग्राहक (Customer)</option>
-                <option value="merchant">दुकानदार / मर्चेंट (Merchant)</option>
-            </select>
+        <!-- प्रोडक्ट 1 -->
+        <div class="product-card">
+            <img class="product-img" src="https://picsum.photos/300/200?random=31" alt="Product 1">
+            <div class="product-info">
+                <div class="product-title">Wireless Bluetooth Earbuds Pro</div>
+                <div class="product-price">
+                    <span class="current-price">₹999</span>
+                    <span class="old-price">₹2,499</span>
+                </div>
+                <!-- ध्यान दें: यहाँ 91XXXXXXXXXX की जगह अपना व्हाट्सएप नंबर डालें -->
+                <a href="https://wa.me/91XXXXXXXXXX?text=Hi!%20I%20want%20to%20order%20Wireless%20Bluetooth%20Earbuds%20Pro." target="_blank" class="whatsapp-btn">
+                    🚚 Order via WhatsApp
+                </a>
+            </div>
         </div>
 
-        <div class="form-group"><label>ईमेल एड्रेस</label><input type="email" id="authEmail" placeholder="example@email.com"></div>
-        <div class="form-group"><label>पासवर्ड</label><input type="password" id="authPassword" placeholder="कम से कम 6 अक्षर"></div>
-        <button class="login-btn" id="authBtn">लॉगिन</button>
-        <p style="text-align:center; margin-top:15px;" id="authSwitch">नया अकाउंट? <span id="switchBtn" style="color:var(--primary); font-weight:bold; cursor:pointer;">साइन-अप करें</span></p>
+        <!-- प्रोडक्ट 2 -->
+        <div class="product-card">
+            <img class="product-img" src="https://picsum.photos/300/200?random=32" alt="Product 2">
+            <div class="product-info">
+                <div class="product-title">Smart Fitness Watch Series 5</div>
+                <div class="product-price">
+                    <span class="current-price">₹1,499</span>
+                    <span class="old-price">₹3,999</span>
+                </div>
+                <!-- ध्यान दें: यहाँ 91XXXXXXXXXX की जगह अपना व्हाट्सएप नंबर डालें -->
+                <a href="https://wa.me/91XXXXXXXXXX?text=Hi!%20I%20want%20to%20order%20Smart%20Fitness%20Watch%20Series%205." target="_blank" class="whatsapp-btn">
+                    🚚 Order via WhatsApp
+                </a>
+            </div>
+        </div>
+
     </div>
 
-    <!-- 📱 मुख्य ऐप स्क्रीन -->
-    <div id="appScreen">
-        <div class="header">
-            <h1 id="appLogoTitle">Local Deals Finder</h1>
-            <div class="header-right">
-                <button class="theme-btn" id="themeToggleBtn">🌙</button>
-                <button class="logout-btn" id="logoutBtn">🚪</button>
-            </div>
-        </div>
+    <!-- बैनर को ऑटो-स्क्रॉल करने का कोड -->
+    <script>
+        let currentSlide = 0;
+        const slider = document.getElementById('mainSlider');
+        const totalSlides = 3; 
 
-        <div class="slider-container">
-            <div class="slider" id="bannerSlider">
-                <div class="slide active" style="background-image: url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600')"><div class="slide-text">शॉपिंग सीजन सेल! भारी डिस्काउंट 🛍️</div></div>
-                <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600')"><div class="slide-text">स्वादिष्ट फूड डील्स! Buy 1 Get 1 Free 🍔</div></div>
-            </div>
-        </div>
-
-        <div class="search-container"><input type="text" class="search-bar" id="searchBar" placeholder="दुकानें या ऑफर्स सर्च करें..."></div>
-
-        <!-- 📱 कैटेगरीज (पूरी 12 कैटेगरीज़ की लिस्ट) -->
-        <div class="categories">
-            <div class="category-item active" data-cat="all"><div class="category-icon">📱</div>All</div>
-            <div class="category-item" data-cat="food"><div class="category-icon">🍔</div>Food</div>
-            <div class="category-item" data-cat="fashion"><div class="category-icon">🛍️</div>Fashion</div>
-            <div class="category-item" data-cat="tech"><div class="category-icon">⚡</div>Tech</div>
-            <div class="category-item" data-cat="salon"><div class="category-icon">💇</div>Salon</div>
-            <div class="category-item" data-cat="groceries"><div class="category-icon">🛒</div>Groceries</div>
-            <div class="category-item" data-cat="electronics"><div class="category-icon">🔌</div>Electronics</div>
-            <div class="category-item" data-cat="automobile"><div class="category-icon">🚗</div>Automobile</div>
-            <div class="category-item" data-cat="medical"><div class="category-icon">💊</div>Medical</div>
-            <div class="category-item" data-cat="books"><div class="category-icon">📚</div>Books</div>
-            <div class="category-item" data-cat="footwear"><div class="category-icon">👟</div>Footwear</div>
-            <div class="category-item" data-cat="gym"><div class="category-icon">💪</div>Gym</div>
-            <div class="category-item" data-cat="toys"><div class="category-icon">🎁</div>Toys</div>
-        </div>
-
-        <h2 class="section-title" id="listTitle">आपके आस-पास की बेस्ट डील्स 🔥</h2>
-        <div class="deals-list" id="dealsContainer"></div>
-
-        <button class="fab-btn" id="openUploadBtn">+</button>
-    </div>
-
-    <!-- 📤 अपलोड फॉर्म -->
-    <div id="uploadModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeUploadBtn">&times;</span>
-            <h3 style="margin-bottom: 15px; color: var(--primary);">नया ऑफर अपलोड करें 🏷️</h3>
-            <div class="form-group"><label>दुकान का नाम</label><input type="text" id="shopNameInput" placeholder="उदा. गुप्ता स्टार सैलून"></div>
-            <div class="form-group"><label>ऑफर की जानकारी</label><input type="text" id="dealTextInput" placeholder="उदा. हेयरकट + शेविंग मात्र ₹150"></div>
-            <div class="form-group"><label>डिस्काउंट टैग</label><input type="text" id="tagInput" placeholder="उदा. 30% OFF"></div>
-            <div class="form-group"><label>व्हाट्सएप / फ़ोन नंबर</label><input type="tel" id="phoneInput" placeholder="98765xxxxx"></div>
-            <div class="form-group"><label>ऑफर कब तक वैध है? (Expiry Date) ⏳</label><input type="date" id="expiryInput"></div>
-            <div class="form-group">
-                <label>कैटेगरी चुनें</label>
-                <select id="categorySelect">
-                    <option value="food">Food 🍔</option>
-                    <option value="fashion">Fashion 🛍️</option>
-                    <option value="tech">Tech ⚡</option>
-                    <option value="salon">Salon 💇</option>
-                    <option value="groceries">Groceries 🛒</option>
-                    <option value="electronics">Electronics 🔌</option>
-                    <option value="automobile">Automobile 🚗</option>
-                    <option value="medical">Medical & Health 💊</option>
-                    <option value="books">Books & Stationery 📚</option>
-                    <option value="footwear">Footwear 👟</option>
-                    <option value="gym">Gym & Fitness 💪</option>
-                    <option value="toys">Toys & Gifts 🎁</option>
-                </select>
-            </div>
-            <div class="form-group"><label>फोटो की लिंक (Image URL)</label><input type="text" id="imgUrlInput" value="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500"></div>
-            <button class="login-btn" id="submitDealBtn">लाइव अपलोड करें 🚀</button>
-        </div>
-    </div>
-
-    <!-- 🛍️ विवरण पॉप-अप -->
-    <div id="dealModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeDealBtn">&times;</span>
-            <h2 id="modalShopName">दुकान का नाम</h2>
-            <div class="stars-container" id="modalAvgStars">⭐⭐⭐⭐⭐ (0)</div>
-            <p id="modalDealText" style="color: var(--primary); font-weight: bold; font-size: 1.2rem; margin: 8px 0;">ऑफर</p>
-            <p class="expiry-badge" id="modalExpiryText">⏳ वैध तिथि: </p>
-
-            <div class="action-buttons">
-                <a id="modalCallLink" href="#" class="btn-call">📞 कॉल करें</a>
-                <a id="modalWALink" href="#" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                <a id="modalMapLink" href="#" target="_blank" class="btn-map">📍 गूगल मैप्स पर रास्ता देखें</a>
-            </div>
-
-            <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-            
-            <h4>रेटिंग और कमेंट दें:</h4>
-            <div class="give-rating" id="ratingStars">
-                <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
-            </div>
-            <div class="form-group"><input type="text" id="reviewTextInput" placeholder="अपना रिव्यू लिखें..."></div>
-            <button class="login-btn" style="padding:10px;" id="submitReviewBtn">रिव्यू सबमिट करें</button>
-            <div class="reviews-list" id="modalReviewsContainer"></div>
-        </div>
-    </div>
-
-    <!-- 🧠 जावास्क्रिप्ट लॉजिक (Firebase कनेक्टिविटी के साथ) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCZW-I8bdyUcHarlVzKClWXDPCJcHcHKec",
-            authDomain: "local-deals-finder-6c54b.firebaseapp.com",
-            projectId: "local-deals-finder-6c54b",
-            storageBucket: "local-deals-finder-6c54b.firebasestorage.app",
-            messagingSenderId: "545934889014",
-            appId: "1:545934889014:web:589c05e33e61a45a420897"
-        };
-
-        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app);
-        let userLat = null, userLon = null, selectedRating = 0, currentActiveDealId = null, userRole = 'customer', isFirstLoad = true;
-        let allDealsData = [], currentCategory = 'all';
-
-        // थीम स्विच
-        const themeBtn = document.getElementById('themeToggleBtn');
-        themeBtn.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            themeBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-        });
-
-        // बैनर स्लाइडर
-        let currentSlide = 0; const slides = document.querySelectorAll('.slide');
-        setInterval(() => { slides[currentSlide].classList.remove('active'); currentSlide = (currentSlide + 1) % slides.length; slides[currentSlide].classList.add('active'); }, 4000);
-
-        // जीपीएस लोकेशन ट्रैकर
-        if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(pos => { userLat = pos.coords.latitude; userLon = pos.coords.longitude; renderDeals(); }); }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            if(!lat1 || !lon1 || !lat2 || !lon2 || (lat2==0 && lon2==0)) return "N/A";
-            const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return (R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)))).toFixed(1) + " km";
-        }
-
-        // LOGIN / LOGOUT रोल मैनेजमेंट
-        const loginScreen = document.getElementById('loginScreen'); const appScreen = document.getElementById('appScreen');
-        const authBtn = document.getElementById('authBtn'); const switchBtn = document.getElementById('switchBtn');
-        let isLoginMode = true;
-        
-        switchBtn.addEventListener('click', () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').textContent = isLoginMode ? "लॉगिन करें" : "नया अकाउंट बनाएँ"; authBtn.textContent = isLoginMode ? "लॉगिन" : "साइन-अप"; });
-        
-        authBtn.addEventListener('click', () => {
-            const email = document.getElementById('authEmail').value; const pass = document.getElementById('authPassword').value;
-            userRole = document.getElementById('authRole').value;
-            localStorage.setItem('userRole', userRole);
-
-            if(isLoginMode) signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-            else createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
-        
-        onAuthStateChanged(auth, user => {
-            loginScreen.style.display = user ? "none" : "flex";
-            appScreen.style.display = user ? "block" : "none";
-            if (user) {
-                userRole = localStorage.getItem('userRole') || 'customer';
-                if(userRole === 'merchant') {
-                    document.getElementById('openUploadBtn').style.display = "flex";
-                    document.getElementById('appLogoTitle').textContent = "Merchant Dashboard";
-                    document.getElementById('listTitle').textContent = "आपके लाइव ऑफर्स 🏬";
-                } else {
-                    document.getElementById('openUploadBtn').style.display = "none";
-                    document.getElementById('appLogoTitle').textContent = "Local Deals Finder";
-                    document.getElementById('listTitle').textContent = "आपके आस-पास की बेस्ट डील्स 🔥";
-                }
-                renderDeals();
-            }
-        });
-
-        // डेटाबेस स्नैपशॉट
-        const q = query(collection(db, "deals"), orderBy("time", "desc"));
-        onSnapshot(q, (snapshot) => {
-            let newDeals = [];
-            snapshot.forEach(doc => { let data = doc.data(); data.id = doc.id; newDeals.push(data); });
-            
-            if (!isFirstLoad && newDeals.length > allDealsData.length) {
-                let latestDeal = newDeals[0];
-                showPushNotification(latestDeal.shopName, latestDeal.dealText);
-            }
-            isFirstLoad = false;
-            allDealsData = newDeals;
-            renderDeals();
-        });
-
-        function showPushNotification(shop, deal) {
-            document.getElementById('notifDesc').textContent = `${shop}: ${deal}`;
-            const banner = document.getElementById('notificationBanner');
-            banner.classList.add('show');
-            setTimeout(() => banner.classList.remove('show'), 5000);
-        }
-
-        function renderDeals() {
-            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
-            const container = document.getElementById('dealsContainer'); container.innerHTML = "";
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            allDealsData.forEach(deal => {
-                if (deal.expiryDate && deal.expiryDate < todayStr) return;
-                if (currentCategory !== 'all' && deal.category !== currentCategory) return;
-                if (!deal.shopName.toLowerCase().includes(searchTerm) && !deal.dealText.toLowerCase().includes(searchTerm)) return;
-
-                const distanceStr = calculateDistance(userLat, userLon, deal.lat, deal.lon);
-                let revCount = deal.reviews ? deal.reviews.length : 0;
-                let avgStars = revCount > 0 ? "★".repeat(Math.round(deal.reviews.reduce((acc, r) => acc + r.stars, 0)/revCount)) + "☆".repeat(5 - Math.round(deal.reviews.reduce((acc, r) => acc + r.stars, 0)/revCount)) : "⭐⭐⭐⭐⭐";
-
-                const card = document.createElement('div');
-                card.className = "deal-card";
-                card.innerHTML = `
-                    <div class="deal-tag">${deal.tag}</div>
-                    <button class="delete-deal-btn" data-id="${deal.id}">🗑️</button>
-                    <img class="deal-image" src="${deal.imgUrl}">
-                    <div class="deal-details">
-                        <div class="shop-name">${deal.shopName} <span style="color:#ffd700; font-size:0.85rem;">${avgStars} (${revCount})</span></div>
-                        <div class="deal-text">${deal.dealText}</div>
-                        <div class="deal-meta"><span>📍 ${distanceStr} दूर</span><span class="expiry-badge">⏳ ${deal.expiryDate} तक</span></div>
-                    </div>
-                `;
-
-                if(userRole === 'merchant') { card.querySelector('.delete-deal-btn').style.display = "flex"; }
-
-                card.querySelector('.delete-deal-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if(confirm("क्या आप वाकई इसे हटाना चाहते हैं?")) {
-                        await deleteDoc(doc(db, "deals", deal.id));
-                        alert("ऑफर हटा दिया गया है।");
-                    }
-                });
-
-                card.addEventListener('click', () => openDealModal(deal));
-                container.appendChild(card);
-            });
-        }
-
-        function openDealModal(deal) {
-            currentActiveDealId = deal.id;
-            document.getElementById('modalShopName').textContent = deal.shopName;
-            document.getElementById('modalDealText').textContent = deal.dealText;
-            document.getElementById('modalExpiryText').textContent = `⏳ वैध तिथि: ${deal.expiryDate}`;
-            document.getElementById('modalCallLink').href = `tel:${deal.phone}`;
-            document.getElementById('modalWALink').href = `https://wa.me/91${deal.phone}?text=Hello, I saw your deal "${deal.dealText}" on Local Deals Finder.`;
-            
-            if(deal.lat && deal.lon && deal.lat !== 0) {
-                document.getElementById('modalMapLink').href = `https://www.google.com/maps/dir/?api=1&destination=${deal.lat},${deal.lon}`;
-                document.getElementById('modalMapLink').style.display = "flex";
-            } else {
-                document.getElementById('modalMapLink').style.display = "none";
-            }
-
-            const reviewsContainer = document.getElementById('modalReviewsContainer'); reviewsContainer.innerHTML = "";
-            if(deal.reviews && deal.reviews.length > 0) {
-                deal.reviews.forEach(r => { reviewsContainer.innerHTML += `<div class="review-item"><strong>${"★".repeat(r.stars)}</strong> - ${r.text}</div>`; });
-            } else { reviewsContainer.innerHTML = "कोई रिव्यू नहीं है।"; }
-            resetRatingStars();
-            document.getElementById('dealModal').style.display = "flex";
-        }
-
-        const starElements = document.querySelectorAll('#ratingStars .star');
-        starElements.forEach(star => {
-            star.addEventListener('click', function() {
-                selectedRating = parseInt(this.getAttribute('data-value'));
-                starElements.forEach(s => s.classList.toggle('active', parseInt(s.getAttribute('data-value')) <= selectedRating));
-            });
-        });
-
-        function resetRatingStars() { selectedRating = 0; starElements.forEach(s => s.classList.remove('active')); document.getElementById('reviewTextInput').value = ""; }
-
-        document.getElementById('submitReviewBtn').addEventListener('click', async () => {
-            const txt = document.getElementById('reviewTextInput').value;
-            if(selectedRating === 0 || !txt) return alert("रेटिंग और कमेंट भरें!");
-            await updateDoc(doc(db, "deals", currentActiveDealId), { reviews: arrayUnion({ stars: selectedRating, text: txt, time: Date.now() }) });
-            document.getElementById('dealModal').style.display = "none";
-        });
-
-        document.getElementById('openUploadBtn').addEventListener('click', () => document.getElementById('uploadModal').style.display = "flex");
-        document.getElementById('closeUploadBtn').addEventListener('click', () => document.getElementById('uploadModal').style.display = "none");
-        document.getElementById('closeDealBtn').addEventListener('click', () => document.getElementById('dealModal').style.display = "none");
-
-        document.getElementById('submitDealBtn').addEventListener('click', async () => {
-            const shopName = document.getElementById('shopNameInput').value; const dealText = document.getElementById('dealTextInput').value;
-            const tag = document.getElementById('tagInput').value; const phone = document.getElementById('phoneInput').value;
-            const expiryDate = document.getElementById('expiryInput').value; const category = document.getElementById('categorySelect').value;
-            const imgUrl = document.getElementById('imgUrlInput').value;
-            if(!shopName || !dealText || !tag || !phone || !expiryDate) return alert("सभी जानकारियां भरें!");
-
-            const upload = async (lat, lon) => {
-                await addDoc(collection(db, "deals"), { shopName, dealText, tag, phone, expiryDate, category, imgUrl, lat, lon, reviews: [], time: Date.now() });
-                document.getElementById('uploadModal').style.display = "none";
-            };
-            if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(pos => upload(pos.coords.latitude, pos.coords.longitude), () => upload(0,0)); }
-            else { upload(0,0); }
-        });
-
-        document.getElementById('searchBar').addEventListener('input', renderDeals);
-        const catItems = document.querySelectorAll('.category-item');
-        catItems.forEach(item => { item.addEventListener('click', function() { catItems.forEach(i => i.classList.remove('active')); this.classList.add('active'); currentCategory = this.getAttribute('data-cat'); renderDeals(); }); });
+        setInterval(() => {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            slider.style.transform = `translateX(-${(currentSlide * 100) / totalSlides}%)`;
+        }, 3000); // हर 3 सेकंड में बैनर बदलेगा
     </script>
 </body>
-</html>
+                                                       </html>
+    
